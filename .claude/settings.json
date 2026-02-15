@@ -1,0 +1,73 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "Task",
+      "Bash(git *)",
+      "Bash(docker compose *)",
+      "Bash(docker exec project-runtime *)",
+      "Bash(docker logs *)",
+      "Bash(docker ps *)",
+      "Bash(mkdir *)",
+      "Bash(ls *)",
+      "Bash(chmod *)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Bash(pip install opencv-python*)",
+      "Bash(pip install opencv-contrib*)",
+      "Bash(apt *)",
+      "Bash(apt-get *)",
+      "Bash(sudo *)",
+      "Bash(systemctl *)",
+      "Bash(service *)",
+      "Bash(reboot *)",
+      "Bash(shutdown *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-host-python.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/warn-dockerfile-edit.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"Entorno: Jetson Orin Nano | ARM64 | CUDA 12.2 | Memoria compartida 8GB | Workflow: usa Superpowers skills para todo el desarrollo\"}}'"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  }
+}

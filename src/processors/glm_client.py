@@ -30,6 +30,8 @@ class GLMModel(str, Enum):
     GLM_4_PLUS = "glm-4-plus"
     GLM_4_FLASH = "glm-4-flash"      # Faster, cheaper
     GLM_4_LONG = "glm-4-long"        # Long context
+    # GLM-5
+    GLM_5 = "glm-5"
 
 
 @dataclass
@@ -263,10 +265,10 @@ class GLMClient:
 
 # Convenience functions
 def get_glm_analysis_client() -> GLMClient:
-    """Get GLM client for analysis (GLM-4-Flash for speed)."""
-    return GLMClient(model=GLMModel.GLM_4_FLASH)
+    """Get GLM client for analysis (GLM-5 for speed and quality)."""
+    return GLMClient(model=GLMModel.GLM_5)
 
 
 def get_glm_synthesis_client() -> GLMClient:
-    """Get GLM client for synthesis (GLM-4-Plus for quality)."""
-    return GLMClient(model=GLMModel.GLM_4_PLUS, timeout=300)
+    """Get GLM client for synthesis (GLM-5 for quality)."""
+    return GLMClient(model=GLMModel.GLM_5, timeout=300)

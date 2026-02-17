@@ -86,10 +86,18 @@ Respond with a valid JSON array containing scores for each item:
 - **Maintain index ordering** to match input
 - **Be consistent** - similar content should receive similar scores
 - **Score based on evidence** - not speculation about future potential
+- **Maturity refers to the technology/topic** being discussed, not the item itself
+
+## Error Handling
+
+If an item cannot be properly scored (empty content, corrupted data, non-parseable input):
+- Assign `signal_score: 1`
+- Set `reasoning` to explain the issue (e.g., "Unable to score: empty content")
+- Still include the item in output with its original index
 
 ## Example
 
-Input:
+**Input (what you receive):**
 ```json
 [
   {"index": 0, "title": "Claude Code 2.0 Released with MCP Support", "source_type": "news", "content_preview": "Major release adds Model Context Protocol support..."},
@@ -97,10 +105,5 @@ Input:
 ]
 ```
 
-Output:
-```json
-[
-  {"index": 0, "signal_score": 8, "impact": "tooling", "maturity": "stable", "reasoning": "Major tool release with documented new capability (MCP) that affects development workflows"},
-  {"index": 1, "signal_score": 2, "impact": "ecosystem", "maturity": "stable", "reasoning": "Generic beginner tutorial with no novel insights or updates"}
-]
-```
+**Your output (RAW JSON - no code blocks, no labels):**
+[{"index": 0, "signal_score": 8, "impact": "tooling", "maturity": "stable", "reasoning": "Major tool release with documented new capability (MCP) that affects development workflows"},{"index": 1, "signal_score": 2, "impact": "ecosystem", "maturity": "stable", "reasoning": "Generic beginner tutorial with no novel insights or updates"}]

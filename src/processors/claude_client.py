@@ -298,33 +298,3 @@ class ClaudeClient:
         """
         prompt = prompt_template.format(content=content)
         return self.complete(prompt)
-
-
-# Convenience functions for common use cases
-def get_analysis_client() -> ClaudeClient:
-    """Get Claude client configured for analysis (Sonnet/GLM-5)."""
-    config = get_config()
-    model_str = config.models.analysis or "glm-5"
-    try:
-        model = ClaudeModel(model_str)
-    except ValueError:
-        # Map GLM model names
-        if "glm" in model_str.lower():
-            model = ClaudeModel.GLM_5
-        else:
-            model = ClaudeModel.SONNET
-    return ClaudeClient(model=model)
-
-
-def get_synthesis_client() -> ClaudeClient:
-    """Get Claude client configured for synthesis (Opus/GLM-5)."""
-    config = get_config()
-    model_str = config.models.synthesis or "glm-5"
-    try:
-        model = ClaudeModel(model_str)
-    except ValueError:
-        if "glm" in model_str.lower():
-            model = ClaudeModel.GLM_5
-        else:
-            model = ClaudeModel.OPUS
-    return ClaudeClient(model=model, timeout=300)  # Longer timeout for synthesis

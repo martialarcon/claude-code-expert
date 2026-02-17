@@ -253,24 +253,3 @@ class TestClaudeClientErrors:
 
             with pytest.raises(ClaudeAPIError):
                 client.complete("Prompt")
-
-
-class TestConvenienceFunctions:
-    """Test convenience factory functions."""
-
-    def test_get_analysis_client(self):
-        """Should return client with Sonnet model."""
-        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
-            from src.processors.claude_client import get_analysis_client, ClaudeModel
-
-            client = get_analysis_client()
-            assert client.model == ClaudeModel.SONNET
-
-    def test_get_synthesis_client(self):
-        """Should return client with Opus model and longer timeout."""
-        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
-            from src.processors.claude_client import get_synthesis_client, ClaudeModel
-
-            client = get_synthesis_client()
-            assert client.model == ClaudeModel.OPUS
-            assert client.timeout == 300

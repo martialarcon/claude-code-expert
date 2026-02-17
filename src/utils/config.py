@@ -13,9 +13,15 @@ from pydantic_settings import BaseSettings
 
 
 class ModelsConfig(BaseModel):
-    """Claude model configuration."""
+    """Model configuration."""
+    # Provider: "claude" or "glm"
+    provider: str = "claude"
+    # Claude models
     analysis: str = "claude-sonnet-4-20250514"
     synthesis: str = "claude-opus-4-6"
+    # GLM models (used when provider="glm")
+    glm_analysis: str = "glm-4-flash"
+    glm_synthesis: str = "glm-4-plus"
 
 
 class ThresholdsConfig(BaseModel):
@@ -148,9 +154,16 @@ class Config(BaseModel):
 class Settings(BaseSettings):
     """Environment-based settings."""
     anthropic_api_key: str = ""
+    glm_api_key: str = ""           # Also reads from ZHIPUAI_API_KEY
+    zhipuai_api_key: str = ""       # Alias for glm_api_key
     github_token: str = ""
     ntfy_topic: str = "ai-architect"
     log_level: str = "INFO"
+
+    @property
+    def effective_glm_key(self) -> str:
+        """Get GLM API key from either variable."""
+        return self.glm_api_key or self.zhipuai_api_key
 
     class Config:
         env_file = ".env"

@@ -9,6 +9,7 @@ python-dotenv>=1.0
 
 # HTTP & Parsing
 httpx>=0.25.0
+anthropic>=0.40.0
 feedparser>=6.0
 beautifulsoup4>=4.12
 

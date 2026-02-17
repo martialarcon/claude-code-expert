@@ -207,7 +207,8 @@ class AIArchitect:
         # Step 1: Rank and filter by signal
         log.info("ranking_items", count=len(items))
         ranked = self.ranker.rank_all(items)
-        filtered_by_signal = [r.item for r in ranked]
+        # Apply scores to items before filtering
+        filtered_by_signal = self.ranker.apply_scores(ranked)
 
         self.metrics.items_discarded += len(items) - len(filtered_by_signal)
         log.info(

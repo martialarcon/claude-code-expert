@@ -1,15 +1,17 @@
 """
 AI Architect v2 - Claude Client Wrapper
 
-Wraps the Claude CLI with retry logic, timeout handling, and JSON parsing.
+Wraps the Anthropic SDK with retry logic, timeout handling, and JSON parsing.
+Configurable base_url for GLM proxy support.
 """
 
 import json
-import subprocess
+import os
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+from anthropic import Anthropic, APIError, APITimeoutError
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -17,16 +19,18 @@ from tenacity import (
     wait_exponential,
 )
 
-from ..utils.config import get_config, get_settings
+from ..utils.config import get_config
 from ..utils.logger import get_logger
 
 log = get_logger("processor.claude_client")
 
 
 class ClaudeModel(str, Enum):
-    """Available Claude models."""
+    """Available Claude models (or GLM equivalents)."""
     SONNET = "claude-sonnet-4-20250514"
     OPUS = "claude-opus-4-6"
+    GLM_5 = "glm-5"
+    GLM_4_FLASH = "glm-4-flash"
 
 
 @dataclass
@@ -61,9 +65,9 @@ class ClaudeParseError(ClaudeClientError):
 
 class ClaudeClient:
     """
-    Wrapper for Claude CLI with retry logic and JSON parsing.
+    Wrapper for Anthropic SDK with retry logic and JSON parsing.
 
-    Uses the Claude CLI subprocess for API calls.
+    Supports custom base_url for GLM proxy compatibility.
     """
 
     def __init__(
@@ -71,6 +75,8 @@ class ClaudeClient:
         model: ClaudeModel | None = None,
         timeout: int = 120,
         max_retries: int = 3,
+        api_key: str | None = None,
+        base_url: str | None = None,
     ):
         """
         Initialize Claude client.
@@ -79,33 +85,28 @@ class ClaudeClient:
             model: Claude model to use (defaults to analysis model from config)
             timeout: Request timeout in seconds
             max_retries: Maximum retry attempts
+            api_key: API key (defaults to ANTHROPIC_API_KEY env var)
+            base_url: API base URL (defaults to ANTHROPIC_BASE_URL env var)
         """
         config = get_config()
         self.model = model or ClaudeModel.SONNET
         self.timeout = timeout
         self.max_retries = max_retries
-        self._settings = get_settings()
 
-    def _build_command(
-        self,
-        prompt: str,
-        system: str | None = None,
-        max_tokens: int = 4096,
-    ) -> list[str]:
-        """Build Claude CLI command."""
-        cmd = [
-            "claude",
-            "--model", self.model.value,
-            "--max-tokens", str(max_tokens),
-            "--output-format", "json",
-            "--print",  # Output to stdout
-        ]
+        # Get API credentials
+        self._api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+        self._base_url = base_url or os.environ.get("ANTHROPIC_BASE_URL")
 
-        if system:
-            cmd.extend(["--system", system])
+        if not self._api_key:
+            log.warning("anthropic_api_key_not_set")
 
-        cmd.append(prompt)
-        return cmd
+        # Initialize Anthropic client
+        client_kwargs = {"api_key": self._api_key, "timeout": self.timeout}
+        if self._base_url:
+            client_kwargs["base_url"] = self._base_url
+
+        self._client = Anthropic(**client_kwargs)
+        log.debug("claude_client_initialized", model=self.model.value, base_url=self._base_url)
 
     @retry(
         retry=retry_if_exception_type(ClaudeAPIError),
@@ -113,90 +114,93 @@ class ClaudeClient:
         wait=wait_exponential(multiplier=1, min=4, max=60),
         reraise=True,
     )
-    def _execute(self, cmd: list[str]) -> str:
+    def _execute(
+        self,
+        prompt: str,
+        system: str | None = None,
+        max_tokens: int = 4096,
+    ) -> str:
         """
-        Execute Claude CLI command with retry logic.
+        Execute API request with retry logic.
 
         Args:
-            cmd: Command and arguments
+            prompt: User prompt
+            system: System prompt
+            max_tokens: Maximum tokens in response
 
         Returns:
-            Raw stdout output
+            Raw text response
 
         Raises:
-            ClaudeTimeoutError: Command timed out
+            ClaudeTimeoutError: Request timed out
             ClaudeAPIError: API error (retryable)
         """
-        log.debug("executing_claude", model=self.model.value, cmd=" ".join(cmd[:5]))
+        log.debug("executing_anthropic", model=self.model.value)
 
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout,
-            )
+            kwargs = {
+                "model": self.model.value,
+                "max_tokens": max_tokens,
+                "messages": [{"role": "user", "content": prompt}],
+            }
 
-            if result.returncode != 0:
-                error_msg = result.stderr.strip() or result.stdout.strip()
-                log.error(
-                    "claude_error",
-                    returncode=result.returncode,
-                    error=error_msg[:500],
-                )
+            if system:
+                kwargs["system"] = system
 
-                # Check for rate limit or temporary errors (retryable)
-                if "rate" in error_msg.lower() or "overloaded" in error_msg.lower():
-                    raise ClaudeAPIError(f"Rate limited: {error_msg[:200]}")
+            response = self._client.messages.create(**kwargs)
 
-                raise ClaudeAPIError(f"Claude error: {error_msg[:200]}")
+            # Extract text from content blocks
+            content = ""
+            for block in response.content:
+                if hasattr(block, "text"):
+                    content += block.text
 
-            return result.stdout
+            return content
 
-        except subprocess.TimeoutExpired as e:
-            log.error("claude_timeout", timeout=self.timeout)
-            raise ClaudeTimeoutError(f"Claude request timed out after {self.timeout}s") from e
+        except APITimeoutError as e:
+            log.error("anthropic_timeout", timeout=self.timeout)
+            raise ClaudeTimeoutError(f"Request timed out after {self.timeout}s") from e
 
-    def _parse_response(self, raw_output: str) -> ClaudeResponse:
-        """
-        Parse Claude CLI JSON output.
+        except APIError as e:
+            error_msg = str(e)[:500]
+            log.error("anthropic_api_error", error=error_msg)
 
-        Args:
-            raw_output: Raw stdout from Claude CLI
+            # Check for rate limit or temporary errors (retryable)
+            if "rate" in error_msg.lower() or "overload" in error_msg.lower():
+                raise ClaudeAPIError(f"Rate limited: {error_msg}")
 
-        Returns:
-            Parsed ClaudeResponse
+            raise ClaudeAPIError(f"API error: {error_msg}") from e
 
-        Raises:
-            ClaudeParseError: Failed to parse output
-        """
+    def _parse_json_from_content(self, content: str) -> dict[str, Any] | None:
+        """Extract and parse JSON from content."""
         try:
-            # Claude CLI outputs JSON
-            data = json.loads(raw_output.strip())
+            # Try direct parse
+            return json.loads(content.strip())
+        except json.JSONDecodeError:
+            pass
 
-            content = data.get("content", "")
-            if isinstance(content, list) and len(content) > 0:
-                # Handle structured content blocks
-                content = content[0].get("text", str(content[0]))
+        # Try extracting from markdown code blocks
+        if "```json" in content:
+            start = content.find("```json") + 7
+            end = content.find("```", start)
+            try:
+                return json.loads(content[start:end].strip())
+            except json.JSONDecodeError:
+                pass
 
-            return ClaudeResponse(
-                content=content,
-                model=data.get("model", self.model.value),
-                usage=data.get("usage"),
-                raw_output=raw_output,
-                json_data=data if isinstance(data, dict) else None,
-            )
+        if "```" in content:
+            start = content.find("```") + 3
+            # Skip language identifier if present
+            newline_pos = content.find("\n", start)
+            if newline_pos > start:
+                start = newline_pos + 1
+            end = content.find("```", start)
+            try:
+                return json.loads(content[start:end].strip())
+            except json.JSONDecodeError:
+                pass
 
-        except json.JSONDecodeError as e:
-            # Maybe it's plain text output
-            if raw_output.strip():
-                log.warning("claude_non_json_output", output=raw_output[:200])
-                return ClaudeResponse(
-                    content=raw_output.strip(),
-                    model=self.model.value,
-                    raw_output=raw_output,
-                )
-            raise ClaudeParseError(f"Failed to parse Claude output: {e}") from e
+        return None
 
     def complete(
         self,
@@ -220,29 +224,22 @@ class ClaudeClient:
         Raises:
             ClaudeTimeoutError: Request timed out
             ClaudeAPIError: API error
-            ClaudeParseError: Failed to parse response
+            ClaudeParseError: Failed to parse response as JSON (when expect_json=True)
         """
-        cmd = self._build_command(prompt, system, max_tokens)
-        raw_output = self._execute(cmd)
-        response = self._parse_response(raw_output)
+        content = self._execute(prompt, system, max_tokens)
 
-        # Parse inner JSON if expecting JSON response
-        if expect_json and response.content:
-            try:
-                # Try to extract JSON from markdown code blocks
-                content = response.content
-                if "```json" in content:
-                    start = content.find("```json") + 7
-                    end = content.find("```", start)
-                    content = content[start:end].strip()
-                elif "```" in content:
-                    start = content.find("```") + 3
-                    end = content.find("```", start)
-                    content = content[start:end].strip()
+        response = ClaudeResponse(
+            content=content,
+            model=self.model.value,
+        )
 
-                response.json_data = json.loads(content)
-            except json.JSONDecodeError:
-                log.warning("claude_json_parse_failed", content=response.content[:200])
+        # Parse JSON if expected
+        if expect_json and content:
+            json_data = self._parse_json_from_content(content)
+            if json_data:
+                response.json_data = json_data
+            else:
+                log.warning("claude_json_parse_failed", content=content[:200])
 
         log.info(
             "claude_complete",
@@ -305,10 +302,29 @@ class ClaudeClient:
 
 # Convenience functions for common use cases
 def get_analysis_client() -> ClaudeClient:
-    """Get Claude client configured for analysis (Sonnet)."""
-    return ClaudeClient(model=ClaudeModel.SONNET)
+    """Get Claude client configured for analysis (Sonnet/GLM-5)."""
+    config = get_config()
+    model_str = config.models.analysis or "glm-5"
+    try:
+        model = ClaudeModel(model_str)
+    except ValueError:
+        # Map GLM model names
+        if "glm" in model_str.lower():
+            model = ClaudeModel.GLM_5
+        else:
+            model = ClaudeModel.SONNET
+    return ClaudeClient(model=model)
 
 
 def get_synthesis_client() -> ClaudeClient:
-    """Get Claude client configured for synthesis (Opus)."""
-    return ClaudeClient(model=ClaudeModel.OPUS, timeout=300)  # Longer timeout for synthesis
+    """Get Claude client configured for synthesis (Opus/GLM-5)."""
+    config = get_config()
+    model_str = config.models.synthesis or "glm-5"
+    try:
+        model = ClaudeModel(model_str)
+    except ValueError:
+        if "glm" in model_str.lower():
+            model = ClaudeModel.GLM_5
+        else:
+            model = ClaudeModel.OPUS
+    return ClaudeClient(model=model, timeout=300)  # Longer timeout for synthesis

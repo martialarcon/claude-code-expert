@@ -1,16 +1,10 @@
 # AI Architect v2 Configuration
 # Target: Jetson Orin Nano (ARM64, 8GB RAM)
 
-# Model Provider: "claude" or "glm"
-# Set provider to "glm" to use ZhipuAI models instead of Claude
 models:
-  provider: "glm"                 # "claude" | "glm"
-  # Claude models (used when provider="claude")
-  analysis: "claude-sonnet-4-20250514"
-  synthesis: "claude-opus-4-6"
-  # GLM models (used when provider="glm")
-  glm_analysis: "glm-5"           # GLM-5 for analysis
-  glm_synthesis: "glm-5"          # GLM-5 for synthesis
+  provider: "anthropic"           # Using Anthropic SDK with GLM proxy
+  analysis: "glm-5"               # GLM-5 for analysis
+  synthesis: "glm-5"              # GLM-5 for synthesis
 
 # Processing thresholds
 thresholds:

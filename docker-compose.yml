@@ -1,0 +1,65 @@
+# AI Architect v2 - Docker Compose
+# Target: Jetson Orin Nano (ARM64, 8GB RAM)
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-architect
+    restart: unless-stopped
+
+    # Resource limits for 8GB shared memory constraint
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 2G
+
+    # Environment
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    env_file:
+      - .env
+
+    # Volumes
+    volumes:
+      # Persist data
+      - ./data:/app/data
+      - ./output:/app/output
+      # Config (read-only in container)
+      - ./config.yaml:/app/config.yaml:ro
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Note: ChromaDB runs in embedded mode (not as separate service)
+# This is per the plan's sequential execution model for 8GB RAM constraint
+# If needed later, can add chromadb service:
+#
+#   chromadb:
+#     build:
+#       context: ./docker/chromadb
+#       dockerfile: Dockerfile
+#     container_name: ai-architect-chromadb
+#     ports:
+#       - "8000:8000"
+#     volumes:
+#       - chromadb_data:/chroma/chroma
+#     environment:
+#       - IS_PERSISTENT=TRUE
+#       - ANONYMIZED_TELEMETRY=FALSE

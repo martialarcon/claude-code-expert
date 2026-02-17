@@ -1,0 +1,104 @@
+# AI Architect v2 Configuration
+# Target: Jetson Orin Nano (ARM64, 8GB RAM)
+
+# Claude Models
+models:
+  analysis: "claude-sonnet-4-20250514"
+  synthesis: "claude-opus-4-6"
+
+# Processing thresholds
+thresholds:
+  signal_score_min: 4          # Discard items below this score
+  novelty_score_min: 0.3       # Minimum novelty to process
+  batch_size: 10               # Items per Claude call for ranking
+
+# Execution mode
+mode: "daily"                  # daily | weekly | monthly
+
+# Collectors enabled
+collectors:
+  docs:
+    enabled: true
+    sources:
+      - "https://docs.anthropic.com"
+      - "https://docs.claude.ai"
+    snapshot_dir: "data/snapshots"
+
+  github_signals:
+    enabled: true
+    repos:
+      - owner: "anthropics"
+        repo: "anthropic-sdk-python"
+      - owner: "anthropics"
+        repo: "claude-code"
+    max_items: 50
+
+  github_emerging:
+    enabled: true
+    max_stars: 100
+    min_growth_rate: 1.5       # Weekly growth multiplier
+    topics:
+      - "claude"
+      - "anthropic"
+      - "llm"
+      - "ai-agents"
+    max_items: 30
+
+  github_repos:
+    enabled: true
+    min_stars: 100
+    topics:
+      - "claude"
+      - "anthropic"
+      - "llm"
+    max_items: 30
+
+  blogs:
+    enabled: true
+    feeds:
+      - name: "Simon Willison"
+        url: "https://simonwillison.net/atom/everything/"
+      - name: "Anthropic Blog"
+        url: "https://www.anthropic.com/news/rss"
+    max_items: 20
+
+  stackoverflow:
+    enabled: true
+    tags:
+      - "claude"
+      - "anthropic"
+      - "llm"
+    min_score: 5
+    max_items: 30
+
+# Storage
+storage:
+  chromadb:
+    persist_directory: "data/chromadb"
+    collections:
+      - "items"
+      - "analysis"
+      - "synthesis"
+      - "snapshots"
+
+# Output
+output:
+  daily_dir: "output/daily"
+  weekly_dir: "output/weekly"
+  monthly_dir: "output/monthly"
+  topics_dir: "output/topics"
+  competitive_dir: "output/competitive"
+  master_file: "output/master.md"
+  index_file: "output/index.md"
+
+# Notifications
+notifications:
+  ntfy:
+    enabled: true
+    topic: "ai-architect"
+    url: "https://ntfy.sh"
+
+# Logging
+logging:
+  level: "INFO"
+  format: "json"               # json | text

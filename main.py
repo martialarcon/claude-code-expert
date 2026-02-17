@@ -24,6 +24,8 @@ from src.collectors.github_emerging import collect_github_emerging
 from src.collectors.github_repos import collect_github_repos
 from src.collectors.github_signals import collect_github_signals
 from src.collectors.stackoverflow import collect_stackoverflow
+from src.collectors.hackernews import collect_hackernews
+from src.collectors.reddit import collect_reddit
 from src.processors.analyzer import Analyzer
 from src.processors.novelty_detector import NoveltyDetector
 from src.processors.signal_ranker import SignalRanker
@@ -165,6 +167,8 @@ class AIArchitect:
             ("github_repos", collect_github_repos),
             ("blogs", collect_blogs),
             ("stackoverflow", collect_stackoverflow),
+            ("reddit", collect_reddit),
+            ("hackernews", collect_hackernews),
         ]
 
         for name, collector_func in collectors:

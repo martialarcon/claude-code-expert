@@ -11,7 +11,8 @@ from enum import Enum
 from typing import Any
 
 from .analyzer import AnalysisResult
-from .claude_client import ClaudeClient, ClaudeClientError, get_synthesis_client
+from .client_factory import get_synthesis_client
+from .claude_client import ClaudeClientError
 from ..collectors.base import CollectedItem
 from ..utils.logger import get_logger
 
@@ -176,7 +177,7 @@ class Synthesizer:
 
     def __init__(
         self,
-        client: ClaudeClient | None = None,
+        client: None = None,
         store_results: bool = True,
     ):
         """

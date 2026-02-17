@@ -7,7 +7,8 @@ Performs deep analysis of individual items using Claude Sonnet.
 from dataclasses import dataclass
 from typing import Any
 
-from .claude_client import ClaudeClient, ClaudeClientError, get_analysis_client
+from .client_factory import get_analysis_client
+from .claude_client import ClaudeClientError
 from ..collectors.base import CollectedItem
 from ..utils.config import get_config
 from ..utils.logger import get_logger
@@ -71,7 +72,7 @@ class Analyzer:
 
     def __init__(
         self,
-        client: ClaudeClient | None = None,
+        client: None = None,
         store_results: bool = True,
     ):
         """

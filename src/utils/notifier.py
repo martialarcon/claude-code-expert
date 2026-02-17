@@ -136,9 +136,10 @@ class Notifier:
         Returns:
             True if sent successfully
         """
-        title = f"✅ AI Architect — {date}"
+        title = f"AI Architect - {date}"
 
         lines = [
+            "✅ Daily cycle complete",
             f"Items: {items_analyzed} analyzed, {items_discarded} discarded",
             f"Relevance: {relevance_score}/10",
         ]
@@ -172,11 +173,12 @@ class Notifier:
         Returns:
             True if sent successfully
         """
-        title = f"⚠️ AI Architect — {date}"
+        title = f"AI Architect - {date}"
 
         message = (
+            "⚠️ Daily cycle with errors\n"
             f"Items: {items_analyzed} analyzed\n"
-            f"❌ Errors in: {', '.join(failed_collectors[:5])}"
+            f"Errors in: {', '.join(failed_collectors[:5])}"
         )
 
         return self.send(
@@ -201,10 +203,10 @@ class Notifier:
         Returns:
             True if sent successfully
         """
-        title = f"🔴 AI Architect FAILED — {date}"
+        title = f"AI Architect FAILED - {date}"
 
         return self.send(
-            message=error[:500],
+            message=f"🔴 {error[:500]}",
             title=title,
             priority=Priority.URGENT,
             tags=["rotating_light", "x"],
@@ -227,10 +229,11 @@ class Notifier:
         Returns:
             True if sent successfully
         """
-        title = f"📊 AI Architect Weekly — {week}"
+        title = f"AI Architect Weekly - {week}"
 
         pattern_text = "\n".join(f"- {p[:50]}" for p in patterns[:3])
         message = (
+            "📊 Weekly synthesis\n"
             f"Relevance: {relevance_score}/10\n"
             f"\nPatterns:\n{pattern_text}"
         )
@@ -257,10 +260,10 @@ class Notifier:
         Returns:
             True if sent successfully
         """
-        title = f"📈 AI Architect Monthly — {month}"
+        title = f"AI Architect Monthly - {month}"
 
         return self.send(
-            message=f"Relevance: {relevance_score}/10",
+            message=f"📈 Monthly report\nRelevance: {relevance_score}/10",
             title=title,
             priority=Priority.DEFAULT,
             tags=["bar_chart", "robot"],
@@ -283,9 +286,9 @@ class Notifier:
         Returns:
             True if sent successfully
         """
-        title = "🚨 Señal crítica detectada"
+        title = "Critical Signal Detected"
 
-        message = f"{title_text}\n{source} — {url}"
+        message = f"🚨 {title_text}\n{source} — {url}"
 
         return self.send(
             message=message,

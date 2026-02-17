@@ -168,6 +168,12 @@ class AIArchitect:
         ]
 
         for name, collector_func in collectors:
+            # Check if collector is enabled
+            collector_config = getattr(self.config.collectors, name, None)
+            if collector_config and not getattr(collector_config, "enabled", True):
+                log.info("collector_disabled", source=name)
+                continue
+
             try:
                 log.info("collecting", source=name)
                 result = collector_func(self.config.collectors.model_dump())

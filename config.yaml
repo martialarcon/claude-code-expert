@@ -31,7 +31,7 @@ collectors:
     snapshot_dir: "data/snapshots"
 
   github_signals:
-    enabled: true
+    enabled: false              # Disabled: no GITHUB_TOKEN
     repos:
       - owner: "anthropics"
         repo: "anthropic-sdk-python"
@@ -40,7 +40,7 @@ collectors:
     max_items: 50
 
   github_emerging:
-    enabled: true
+    enabled: false              # Disabled: no GITHUB_TOKEN
     max_stars: 100
     min_growth_rate: 1.5       # Weekly growth multiplier
     topics:
@@ -51,7 +51,7 @@ collectors:
     max_items: 30
 
   github_repos:
-    enabled: true
+    enabled: false              # Disabled: no GITHUB_TOKEN
     min_stars: 100
     topics:
       - "claude"

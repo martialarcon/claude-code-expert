@@ -12,7 +12,6 @@ import copy
 import json
 import logging
 import re
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -58,7 +57,7 @@ class SubagentInvoker:
             agents_dir = project_root / ".claude" / "agents"
         self.agents_dir = agents_dir
 
-    def invoke(self, input_data: Any, timeout: int = 120) -> Any:
+    def invoke(self, input_data: Any, timeout: int = 120) -> Any:  # noqa: ARG002 - timeout for future production use
         """
         Invoke the subagent with input data.
 
@@ -242,7 +241,7 @@ class SubagentInvoker:
             items = [items]
 
         result = []
-        for i, item in enumerate(items):
+        for i, _ in enumerate(items):
             result.append({
                 "index": i,
                 "signal_score": 5,

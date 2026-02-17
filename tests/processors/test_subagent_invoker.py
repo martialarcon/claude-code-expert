@@ -3,7 +3,7 @@
 import json
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+# Note: patch and MagicMock available for future mocking needs
 
 from src.processors.subagent_invoker import (
     SubagentError,

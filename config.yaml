@@ -71,6 +71,20 @@ collectors:
     min_score: 5
     max_items: 30
 
+  reddit:
+    enabled: true
+    subreddits:
+      - "LocalLLaMA"
+      - "ClaudeAI"
+    min_comments: 5
+    max_items: 20
+
+  hackernews:
+    enabled: true
+    min_points: 30
+    min_comments: 3
+    max_items: 20
+
 # Storage
 storage:
   chromadb:

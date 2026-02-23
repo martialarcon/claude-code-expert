@@ -156,6 +156,12 @@ class SignalRanker:
             log.error("batch_ranking_error", error=str(e)[:200])
             return self._fallback_rank(items)
 
+        except Exception as e:
+            # Catch-all for any unexpected errors (timeouts, network issues, etc.)
+            # Always return fallback instead of crashing
+            log.error("batch_ranking_unexpected_error", error=str(e)[:200], error_type=type(e).__name__)
+            return self._fallback_rank(items)
+
     def _parse_rankings(
         self,
         items: list[CollectedItem],

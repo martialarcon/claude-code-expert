@@ -48,6 +48,7 @@ RUN useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
-# Default command
-ENTRYPOINT ["python", "main.py"]
-CMD ["--mode", "daily"]
+# Default command - keep container running for exec commands
+# Actual processing is triggered by cron scripts via docker compose exec
+ENTRYPOINT ["sleep"]
+CMD ["infinity"]

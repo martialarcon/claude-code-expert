@@ -1,6 +1,6 @@
 # AI Architect - Knowledge Index
 
-*Last updated: 2026-02-23 12:09 UTC*
+*Last updated: 2026-02-23 14:05 UTC*
 
 ---
 
@@ -16,6 +16,7 @@
 
 ## Weekly Reports
 
+- [2026-W08](weekly/2026-W08.md)
 
 ## Monthly Reports
 

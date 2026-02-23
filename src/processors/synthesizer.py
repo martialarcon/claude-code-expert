@@ -256,6 +256,11 @@ class Synthesizer:
             log.error("daily_synthesis_error", error=str(e)[:200])
             return self._fallback_daily(date, items)
 
+        except Exception as e:
+            # Catch-all for any unexpected errors (timeouts, network issues, etc.)
+            log.error("daily_synthesis_unexpected_error", error=str(e)[:200], error_type=type(e).__name__)
+            return self._fallback_daily(date, items)
+
     def _parse_daily_synthesis(
         self,
         date: str,
@@ -327,6 +332,11 @@ class Synthesizer:
             log.error("weekly_synthesis_error", error=str(e)[:200])
             return self._fallback_weekly(week, items)
 
+        except Exception as e:
+            # Catch-all for any unexpected errors (timeouts, network issues, etc.)
+            log.error("weekly_synthesis_unexpected_error", error=str(e)[:200], error_type=type(e).__name__)
+            return self._fallback_weekly(week, items)
+
     def _parse_weekly_synthesis(self, week: str, data: dict[str, Any]) -> WeeklySynthesis:
         """Parse weekly synthesis from JSON."""
         return WeeklySynthesis(
@@ -394,6 +404,11 @@ class Synthesizer:
 
         except ClaudeClientError as e:
             log.error("monthly_synthesis_error", error=str(e)[:200])
+            return self._fallback_monthly(month, items)
+
+        except Exception as e:
+            # Catch-all for any unexpected errors (timeouts, network issues, etc.)
+            log.error("monthly_synthesis_unexpected_error", error=str(e)[:200], error_type=type(e).__name__)
             return self._fallback_monthly(month, items)
 
     def _parse_monthly_synthesis(self, month: str, data: dict[str, Any]) -> MonthlySynthesis:

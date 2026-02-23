@@ -152,6 +152,12 @@ class Analyzer:
             log.error("analysis_error", item_id=item.id, error=str(e)[:200])
             return self._fallback_analysis(item)
 
+        except Exception as e:
+            # Catch-all for any unexpected errors (timeouts, network issues, etc.)
+            # Always return fallback instead of crashing the batch
+            log.error("analysis_unexpected_error", item_id=item.id, error=str(e)[:200], error_type=type(e).__name__)
+            return self._fallback_analysis(item)
+
     def _parse_result(self, item_id: str, data: dict[str, Any]) -> AnalysisResult:
         """Parse analysis result from JSON."""
         return AnalysisResult(

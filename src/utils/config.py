@@ -29,6 +29,9 @@ class ThresholdsConfig(BaseModel):
     signal_score_min: int = Field(default=4, ge=1, le=10)
     novelty_score_min: float = Field(default=0.3, ge=0.0, le=1.0)
     batch_size: int = Field(default=10, ge=1, le=50)
+    # Rate limiting delays (seconds)
+    request_delay: float = Field(default=5.0, ge=0.0, le=60.0)  # Delay between individual API calls
+    batch_delay: float = Field(default=3.0, ge=0.0, le=60.0)    # Delay between batch API calls
 
 
 class GitHubRepoConfig(BaseModel):

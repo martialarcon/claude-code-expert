@@ -4,6 +4,7 @@ AI Architect v2 - Item Analyzer
 Performs deep analysis of individual items using Claude Sonnet.
 """
 
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -14,6 +15,9 @@ from ..utils.config import get_config
 from ..utils.logger import get_logger
 
 log = get_logger("processor.analyzer")
+
+# Default delay between API calls to avoid rate limits (seconds)
+DEFAULT_REQUEST_DELAY = 5.0
 
 
 @dataclass
@@ -74,6 +78,7 @@ class Analyzer:
         self,
         client: None = None,
         store_results: bool = True,
+        request_delay: float | None = None,
     ):
         """
         Initialize analyzer.
@@ -81,9 +86,13 @@ class Analyzer:
         Args:
             client: Claude client (uses default analysis client if None)
             store_results: Whether to store analysis in vector store
+            request_delay: Delay between API calls in seconds (to avoid rate limits).
+                          Defaults to config.thresholds.request_delay
         """
         self.client = client or get_analysis_client()
         self.store_results = store_results
+        config = get_config()
+        self.request_delay = request_delay if request_delay is not None else config.thresholds.request_delay
         self._vector_store = None
 
     @property
@@ -213,6 +222,11 @@ class Analyzer:
             log.debug("batch_progress", current=i + 1, total=len(items))
             result = self.analyze(item)
             results.append((item, result))
+
+            # Add delay between requests to avoid rate limiting
+            # Skip delay after last item
+            if self.request_delay > 0 and i < len(items) - 1:
+                time.sleep(self.request_delay)
 
         successful = sum(1 for _, r in results if r is not None)
         log.info(

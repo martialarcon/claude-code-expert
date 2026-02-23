@@ -46,14 +46,14 @@ EOF
 # Create cron jobs
 echo "Creating cron jobs..."
 
-# Daily at midnight
-DAILY_JOB="0 0 * * * cd $PROJECT_DIR && docker compose exec -T app python /app/main.py --mode daily >> $LOG_DIR/daily.log 2>&1"
+# Daily at midnight - uses run-daily.sh to ensure container is running
+DAILY_JOB="0 0 * * * $PROJECT_DIR/scripts/run-daily.sh"
 
-# Weekly on Monday at 01:00
-WEEKLY_JOB="0 1 * * 1 cd $PROJECT_DIR && docker compose exec -T app python /app/main.py --mode weekly >> $LOG_DIR/weekly.log 2>&1"
+# Weekly on Monday at 01:00 - uses run-weekly.sh to ensure container is running
+WEEKLY_JOB="0 1 * * 1 $PROJECT_DIR/scripts/run-weekly.sh"
 
-# Monthly on 1st at 02:00
-MONTHLY_JOB="0 2 1 * * cd $PROJECT_DIR && docker compose exec -T app python /app/main.py --mode monthly >> $LOG_DIR/monthly.log 2>&1"
+# Monthly on 1st at 02:00 - uses run-monthly.sh to ensure container is running
+MONTHLY_JOB="0 2 1 * * $PROJECT_DIR/scripts/run-monthly.sh"
 
 # Remove old ai-architect jobs and add new ones
 (

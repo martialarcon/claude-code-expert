@@ -6,6 +6,7 @@ Processes items in batches with unified Impact + Maturity classification.
 """
 
 import json
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -16,6 +17,9 @@ from ..utils.config import get_config
 from ..utils.logger import get_logger
 
 log = get_logger("processor.signal_ranker")
+
+# Default delay between batch API calls to avoid rate limits (seconds)
+DEFAULT_BATCH_DELAY = 3.0
 
 
 # Impact dimensions from the plan
@@ -97,6 +101,7 @@ class SignalRanker:
         batch_size: int = 10,
         signal_threshold: int = 4,
         client: None = None,
+        batch_delay: float | None = None,
     ):
         """
         Initialize signal ranker.
@@ -105,11 +110,14 @@ class SignalRanker:
             batch_size: Items per Claude call
             signal_threshold: Minimum score to keep (1-10)
             client: Claude client (uses default if None)
+            batch_delay: Delay between batch API calls in seconds (to avoid rate limits).
+                        Defaults to config.thresholds.batch_delay
         """
         config = get_config()
         self.batch_size = batch_size or config.thresholds.batch_size
         self.signal_threshold = signal_threshold or config.thresholds.signal_score_min
         self.client = client or get_analysis_client()
+        self.batch_delay = batch_delay if batch_delay is not None else config.thresholds.batch_delay
 
     def rank_batch(self, items: list[CollectedItem]) -> list[RankedItem]:
         """
@@ -238,6 +246,11 @@ class SignalRanker:
 
             ranked = self.rank_batch(batch)
             all_ranked.extend(ranked)
+
+            # Add delay between batch requests to avoid rate limiting
+            # Skip delay after last batch
+            if self.batch_delay > 0 and i + self.batch_size < len(items):
+                time.sleep(self.batch_delay)
 
         # Filter by threshold
         filtered = [r for r in all_ranked if r.signal_score >= self.signal_threshold]

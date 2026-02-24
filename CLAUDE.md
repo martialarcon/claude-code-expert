@@ -26,6 +26,7 @@ This is a **Claude Code configuration project** for Jetson Orin Nano development
 | `runtime-test` | `/runtime-test <file.py>` | Execute Python in `project-runtime` container with GPU/CUDA access |
 | `security-check` | `/security-check` | Validate security policies before commits/PRs |
 | `jetson-context` | Automatic | Provides Jetson technical context for architectural decisions |
+| `chroma-query` | `/chroma-query "query"` | Search ChromaDB (items + analysis) with structured output |
 
 ## Execution Model
 
@@ -102,3 +103,15 @@ The `docs/plans/` directory contains comprehensive planning for an automated tec
 - `ai-architect-v2-arquitectura-subagentes.md` - Subagent architecture
 
 Target: Sequential execution (8GB RAM constraint), zero API cost policy, ChromaDB + Markdown outputs.
+
+## ChromaDB Query
+
+**Skill:** `/chroma-query "tu pregunta" [--days N] [--collection items|analysis|both]`
+
+**Agent:** `claude --agent chroma-agent`
+
+Busca información en la base de datos vectorial sobre el ecosistema Claude Code y desarrollo asistido por IA.
+
+**Colecciones disponibles:**
+- `items`: Señales recopiladas (blogs, repos, noticias)
+- `analysis`: Análisis profundos de items destacados

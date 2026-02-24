@@ -188,9 +188,46 @@ class Analyzer:
         )
 
     def _store_analysis(self, item: CollectedItem, result: AnalysisResult) -> None:
-        """Store analysis result in vector store."""
+        """Store item and analysis result in vector store."""
         try:
-            # Create searchable text from analysis
+            # 1. Store ITEM with conditional quality
+            is_high_quality = result.confidence >= 0.8
+
+            if is_high_quality:
+                # High quality: full content + rich metadata
+                item_content = f"{item.title}\n{item.content}"
+                # Build metadata, filtering None values (ChromaDB doesn't accept None)
+                item_metadata = {
+                    "title": item.title,
+                    "source_type": item.source_type.value,
+                    "source_url": item.source_url,
+                    "quality": "high",
+                }
+                # Add optional fields only if they have values
+                if item.published_at:
+                    item_metadata["date"] = item.published_at.isoformat()
+                if item.author:
+                    item_metadata["author"] = item.author
+                if item.signal_score is not None:
+                    item_metadata["signal_score"] = str(item.signal_score)
+            else:
+                # Lower quality: title + summary only
+                item_content = f"{item.title}\n{item.summary or (item.content[:500] if item.content else '')}"
+                item_metadata = {
+                    "title": item.title,
+                    "source_type": item.source_type.value,
+                    "source_url": item.source_url,
+                    "quality": "low",
+                }
+
+            self.vector_store.add(
+                collection="items",
+                documents=[item_content],
+                ids=[item.id],
+                metadatas=[item_metadata],
+            )
+
+            # 2. Store ANALYSIS
             analysis_text = f"{result.summary}\n" + "\n".join(result.key_insights)
 
             self.vector_store.add(
@@ -204,8 +241,15 @@ class Analyzer:
                     "confidence": result.confidence,
                 }],
             )
+
+            log.debug(
+                "storage_complete",
+                item_id=item.id,
+                quality="high" if is_high_quality else "low",
+            )
+
         except Exception as e:
-            log.warning("analysis_storage_failed", error=str(e)[:200])
+            log.warning("storage_failed", error=str(e)[:200])
 
     def analyze_batch(
         self,

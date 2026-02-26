@@ -131,9 +131,25 @@ class NtfyConfig(BaseModel):
     url: str = "https://ntfy.sh"
 
 
+class EmailConfig(BaseModel):
+    """Email notification configuration (Gmail SMTP)."""
+    enabled: bool = False
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""  # From SMTP_USER env var
+    smtp_password: str = ""  # From SMTP_PASSWORD env var
+    use_tls: bool = True
+    from_address: str = ""  # Defaults to smtp_user
+    from_name: str = "AI Architect v2"
+    recipients: list[str] = []
+    auto_send: bool = True
+    send_on_modes: list[str] = ["daily"]
+
+
 class NotificationsConfig(BaseModel):
     """Notifications configuration."""
     ntfy: NtfyConfig = NtfyConfig()
+    email: EmailConfig = EmailConfig()
 
 
 class LoggingConfig(BaseModel):
@@ -162,6 +178,8 @@ class Settings(BaseSettings):
     github_token: str = ""
     ntfy_topic: str = "ai-architect"
     log_level: str = "INFO"
+    smtp_user: str = ""
+    smtp_password: str = ""
 
     @property
     def effective_glm_key(self) -> str:

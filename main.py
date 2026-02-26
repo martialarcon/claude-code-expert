@@ -35,6 +35,7 @@ from src.storage.vector_store import get_vector_store
 from src.utils.config import get_config, get_settings
 from src.utils.logger import configure_logging, get_logger
 from src.utils.notifier import get_notifier
+from src.notifications.email_reporter import EmailReporter
 
 
 log = get_logger("main")
@@ -141,6 +142,9 @@ class AIArchitect:
 
             # Phase 6: Notification
             self._notify_complete(synthesis)
+
+            # Phase 7: Email Report (if enabled)
+            self._send_email_report()
 
             log.info(
                 "cycle_complete",
@@ -340,6 +344,32 @@ class AIArchitect:
                 relevance_score=synthesis.relevance_score,
             )
 
+    def _send_email_report(self, preview_only: bool = False, recipients: list[str] | None = None) -> None:
+        """Send email report if enabled."""
+        email_config = self.config.notifications.email
+
+        if not email_config.enabled:
+            log.debug("email_notifications_disabled")
+            return
+
+        if self.mode not in email_config.send_on_modes:
+            log.debug("mode_not_in_send_on_modes", mode=self.mode)
+            return
+
+        try:
+            reporter = EmailReporter()
+            success = reporter.send_daily_report(
+                days=1,
+                recipients=recipients,
+                preview_only=preview_only,
+            )
+            if success:
+                log.info("email_report_sent", preview=preview_only)
+            else:
+                log.warning("email_report_failed")
+        except Exception as e:
+            log.error("email_report_error", error=str(e)[:200])
+
     def _notify_empty(self) -> None:
         """Notify when no items collected."""
         date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -370,6 +400,21 @@ def main():
         action="store_true",
         help="Enable verbose logging",
     )
+    parser.add_argument(
+        "--email",
+        action="store_true",
+        help="Send email report",
+    )
+    parser.add_argument(
+        "--email-preview",
+        action="store_true",
+        help="Generate email preview without sending",
+    )
+    parser.add_argument(
+        "--email-to",
+        type=str,
+        help="Override email recipient",
+    )
 
     args = parser.parse_args()
 
@@ -389,6 +434,14 @@ def main():
     # Run orchestrator
     architect = AIArchitect(mode=args.mode)
     success = architect.run()
+
+    # Handle email CLI options
+    if args.email or args.email_preview:
+        recipients = [args.email_to] if args.email_to else None
+        architect._send_email_report(
+            preview_only=args.email_preview,
+            recipients=recipients,
+        )
 
     sys.exit(0 if success else 1)
 

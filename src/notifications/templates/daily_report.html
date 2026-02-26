@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Architect - Resumen Diario</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0f0f1a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+            <h1 style="color: #ffffff; margin: 0 0 8px 0; font-size: 24px;">
+                📊 AI Architect - Resumen Diario
+            </h1>
+            <p style="color: #a0a0a0; margin: 0; font-size: 14px;">
+                {{ date }} | Relevancia: {{ relevance_score }}/10
+            </p>
+            <div style="margin-top: 12px; background: #2a2a4a; border-radius: 6px; height: 8px; overflow: hidden;">
+                <div style="background: #4a9eff; height: 100%; width: {{ relevance_score * 10 }}%;"></div>
+            </div>
+        </div>
+
+        <!-- Resumen Ejecutivo -->
+        <div style="background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+            <h2 style="color: #4a9eff; margin: 0 0 16px 0; font-size: 18px;">
+                📋 Resumen Ejecutivo
+            </h2>
+            <p style="color: #e0e0e0; margin: 0; line-height: 1.6; font-size: 15px;">
+                {{ summary }}
+            </p>
+        </div>
+
+        <!-- Destacados -->
+        {% if highlights %}
+        <div style="background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+            <h2 style="color: #ffd700; margin: 0 0 16px 0; font-size: 18px;">
+                ⭐ Destacados
+            </h2>
+            <ul style="color: #e0e0e0; margin: 0; padding-left: 20px; line-height: 1.8;">
+                {% for highlight in highlights %}
+                <li style="margin-bottom: 8px;">{{ highlight }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Patrones -->
+        {% if patterns %}
+        <div style="background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+            <h2 style="color: #00d4aa; margin: 0 0 16px 0; font-size: 18px;">
+                🔍 Patrones Detectados
+            </h2>
+            <ul style="color: #e0e0e0; margin: 0; padding-left: 20px; line-height: 1.8;">
+                {% for pattern in patterns %}
+                <li style="margin-bottom: 8px;">{{ pattern }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Análisis Detallados -->
+        {% if items %}
+        <div style="background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+            <h2 style="color: #ff6b6b; margin: 0 0 16px 0; font-size: 18px;">
+                📝 Análisis Detallados ({{ items_count }} items)
+            </h2>
+
+            {% for item in items %}
+            <div style="background: #252540; border-radius: 8px; padding: 16px; margin-bottom: 16px; {% if loop.last %}margin-bottom: 0;{% endif %}">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <h3 style="color: #ffffff; margin: 0; font-size: 15px; flex: 1;">
+                        📌 {{ item.title }}
+                    </h3>
+                    <span style="background: #4a9eff; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-left: 8px;">
+                        {{ item.signal_score }}/10
+                    </span>
+                </div>
+
+                <p style="color: #808080; margin: 0 0 12px 0; font-size: 12px;">
+                    Fuente: {{ item.source }}
+                    {% if item.actionability %} | Accionabilidad: {{ item.actionability }}{% endif %}
+                </p>
+
+                <p style="color: #c0c0c0; margin: 0 0 12px 0; line-height: 1.5; font-size: 14px;">
+                    {{ item.summary }}
+                </p>
+
+                {% if item.key_insights %}
+                <div style="margin-top: 12px;">
+                    <p style="color: #4a9eff; margin: 0 0 8px 0; font-size: 13px; font-weight: bold;">
+                        Insights Clave:
+                    </p>
+                    <ul style="color: #a0a0a0; margin: 0; padding-left: 16px; font-size: 13px;">
+                        {% for insight in item.key_insights %}
+                        <li style="margin-bottom: 4px;">{{ insight }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if item.url %}
+                <a href="{{ item.url }}" style="color: #4a9eff; font-size: 13px; text-decoration: none; display: inline-block; margin-top: 12px;">
+                    Ver fuente 🔗
+                </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 20px 0;">
+            <p style="color: #606060; margin: 0; font-size: 12px;">
+                🤖 Generado por AI Architect v2 | Jetson Orin Nano
+            </p>
+        </div>
+
+    </div>
+</body>
+</html>

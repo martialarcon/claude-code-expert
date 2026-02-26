@@ -259,3 +259,28 @@ Responde SOLO con la traducción en español, sin explicaciones adicionales."""
             actionability=item.actionability,
             url=item.url,
         )
+
+    def render_html(self, content: EmailContent) -> str:
+        """
+        Render email content as HTML.
+
+        Args:
+            content: EmailContent to render
+
+        Returns:
+            HTML string
+        """
+        template = self.env.get_template("daily_report.html")
+
+        html = template.render(
+            date=content.date,
+            relevance_score=content.relevance_score,
+            summary=content.summary,
+            highlights=content.highlights,
+            patterns=content.patterns,
+            items=content.items,
+            items_count=len(content.items),
+        )
+
+        log.info("html_rendered", length=len(html))
+        return html

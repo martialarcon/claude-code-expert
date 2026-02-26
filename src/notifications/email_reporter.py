@@ -284,3 +284,137 @@ Responde SOLO con la traducción en español, sin explicaciones adicionales."""
 
         log.info("html_rendered", length=len(html))
         return html
+
+    def send_email(
+        self,
+        html_content: str,
+        recipients: list[str] | None = None,
+        subject: str | None = None,
+    ) -> bool:
+        """
+        Send HTML email via SMTP.
+
+        Args:
+            html_content: HTML content to send
+            recipients: Override recipients (optional)
+            subject: Override subject line (optional)
+
+        Returns:
+            True if sent successfully
+        """
+        if not self.email_config.enabled:
+            log.info("email_disabled")
+            return False
+
+        # Get credentials
+        smtp_user = self.settings.smtp_user or os.environ.get("SMTP_USER", "")
+        smtp_password = self.settings.smtp_password or os.environ.get("SMTP_PASSWORD", "")
+
+        if not smtp_user or not smtp_password:
+            log.error("smtp_credentials_missing")
+            return False
+
+        # Get recipients
+        to_addresses = recipients or self.email_config.recipients
+        if not to_addresses:
+            log.error("no_recipients_configured")
+            return False
+
+        # Build message
+        from_addr = self.email_config.from_address or smtp_user
+        from_name = self.email_config.from_name
+
+        msg = MIMEMultipart("alternative")
+        msg["From"] = f"{from_name} <{from_addr}>"
+        msg["To"] = ", ".join(to_addresses)
+        msg["Subject"] = subject or f"AI Architect - Resumen Diario {datetime.now().strftime('%d/%m/%Y')}"
+
+        # Attach HTML
+        html_part = MIMEText(html_content, "html", "utf-8")
+        msg.attach(html_part)
+
+        # Send
+        try:
+            with smtplib.SMTP(
+                self.email_config.smtp_host,
+                self.email_config.smtp_port,
+            ) as server:
+                if self.email_config.use_tls:
+                    server.starttls()
+
+                server.login(smtp_user, smtp_password)
+                server.sendmail(from_addr, to_addresses, msg.as_string())
+
+            log.info(
+                "email_sent",
+                recipients=to_addresses,
+                subject=msg["Subject"],
+            )
+            return True
+
+        except smtplib.SMTPException as e:
+            log.error("smtp_error", error=str(e)[:200])
+            return False
+        except Exception as e:
+            log.error("email_send_failed", error=str(e)[:200])
+            return False
+
+    def preview(self, content: EmailContent, output_dir: Path | str = "output/email_preview") -> Path:
+        """
+        Generate HTML preview without sending.
+
+        Args:
+            content: EmailContent to render
+            output_dir: Directory for preview file
+
+        Returns:
+            Path to generated HTML file
+        """
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        html = self.render_html(content)
+        filename = f"preview_{content.date.replace('-', '')}.html"
+        file_path = output_path / filename
+
+        file_path.write_text(html, encoding="utf-8")
+
+        log.info("preview_generated", path=str(file_path))
+        return file_path
+
+    def send_daily_report(
+        self,
+        days: int = 1,
+        recipients: list[str] | None = None,
+        preview_only: bool = False,
+    ) -> bool:
+        """
+        Full workflow: fetch, translate, render, and send daily report.
+
+        Args:
+            days: Days to look back
+            recipients: Override recipients
+            preview_only: If True, only generate preview
+
+        Returns:
+            True if successful
+        """
+        # Fetch
+        content = self.fetch_content(days=days)
+        if not content:
+            log.warning("no_content_to_send")
+            return False
+
+        # Translate
+        translated = self.translate_to_spanish(content)
+
+        # Render
+        html = self.render_html(translated)
+
+        # Preview or send
+        if preview_only:
+            path = self.preview(translated)
+            print(f"Preview saved to: {path}")
+            return True
+
+        return self.send_email(html, recipients=recipients)

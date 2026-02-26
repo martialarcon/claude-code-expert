@@ -112,6 +112,22 @@ notifications:
     topic: "ai-architect"
     url: "https://ntfy.sh"
 
+  # Email notifications via Gmail SMTP
+  email:
+    enabled: false  # Set to true after configuring SMTP credentials
+    smtp_host: "smtp.gmail.com"
+    smtp_port: 587
+    smtp_user: "${SMTP_USER}"
+    smtp_password: "${SMTP_PASSWORD}"
+    use_tls: true
+    from_address: "${SMTP_USER}"
+    from_name: "AI Architect v2"
+    recipients:
+      - "tu@email.com"  # Replace with your email
+    auto_send: true
+    send_on_modes:
+      - "daily"
+
 # Logging
 logging:
   level: "INFO"

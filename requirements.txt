@@ -30,3 +30,6 @@ structlog>=23.0
 tenacity>=8.0          # Retry logic
 dateparser>=1.1        # Flexible date parsing
 python-slugify>=8.0    # URL-safe slugs
+
+# Templating
+jinja2>=3.1

@@ -174,3 +174,88 @@ class EmailReporter:
             actionability=meta.get("actionability"),
             url=meta.get("url"),
         )
+
+    def translate_to_spanish(self, content: EmailContent) -> EmailContent:
+        """
+        Translate email content to Spanish using Claude.
+
+        Args:
+            content: Original content in English
+
+        Returns:
+            New EmailContent with translated fields
+        """
+        log.info("translating_to_spanish")
+
+        # Translate summary
+        translated_summary = self._translate_text(content.summary, "resumen ejecutivo")
+
+        # Translate highlights
+        translated_highlights = []
+        for highlight in content.highlights:
+            translated_highlights.append(
+                self._translate_text(highlight, "punto destacado")
+            )
+
+        # Translate patterns
+        translated_patterns = []
+        for pattern in content.patterns:
+            translated_patterns.append(
+                self._translate_text(pattern, "patrón detectado")
+            )
+
+        # Translate items
+        translated_items = []
+        for item in content.items:
+            translated_items.append(self._translate_item(item))
+
+        return EmailContent(
+            date=content.date,
+            relevance_score=content.relevance_score,
+            summary=translated_summary,
+            highlights=translated_highlights,
+            patterns=translated_patterns,
+            items=translated_items,
+        )
+
+    def _translate_text(self, text: str, context: str = "") -> str:
+        """Translate a single text to Spanish."""
+        if not text:
+            return text
+
+        prompt = f"""Traduce el siguiente texto al español. Mantén el tono técnico y profesional.
+Contexto: {context}
+
+Texto a traducir:
+{text}
+
+Responde SOLO con la traducción en español, sin explicaciones adicionales."""
+
+        try:
+            response = self.claude.complete(prompt, max_tokens=1000)
+            return response.content.strip()
+        except Exception as e:
+            log.warning("translation_failed", context=context, error=str(e)[:100])
+            return text  # Return original on failure
+
+    def _translate_item(self, item: AnalyzedItem) -> AnalyzedItem:
+        """Translate an AnalyzedItem to Spanish."""
+        translated_summary = self._translate_text(item.summary, "resumen de item")
+
+        translated_insights = []
+        for insight in item.key_insights:
+            translated_insights.append(
+                self._translate_text(insight, "insight clave")
+            )
+
+        return AnalyzedItem(
+            title=item.title,  # Keep original title
+            source=item.source,
+            signal_score=item.signal_score,
+            summary=translated_summary,
+            key_insights=translated_insights,
+            technical_details=item.technical_details,
+            relevance_to_claude=item.relevance_to_claude,
+            actionability=item.actionability,
+            url=item.url,
+        )

@@ -166,7 +166,7 @@ class EmailReporter:
         return AnalyzedItem(
             title=meta.get("title", "Unknown"),
             source=meta.get("source", "unknown"),
-            signal_score=meta.get("signal_score", 5),
+            signal_score=int(meta.get("signal_score", 5)),
             summary=meta.get("summary", doc[:300]),
             key_insights=meta.get("key_insights", []),
             technical_details=meta.get("technical_details"),

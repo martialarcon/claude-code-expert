@@ -39,7 +39,7 @@ class TestAnalysisMetadataEnrichment:
             confidence=0.9,
         )
 
-    @patch("src.processors.analyzer.get_vector_store")
+    @patch("src.storage.vector_store.get_vector_store")
     def test_analysis_stores_title_in_metadata(self, mock_get_store, sample_item, sample_result):
         """Analysis metadata should include title for email reporter."""
         mock_store = Mock()
@@ -56,7 +56,7 @@ class TestAnalysisMetadataEnrichment:
         metadata = analysis_call.kwargs["metadatas"][0]
         assert metadata["title"] == "Claude 4.6 Released with New Features"
 
-    @patch("src.processors.analyzer.get_vector_store")
+    @patch("src.storage.vector_store.get_vector_store")
     def test_analysis_stores_source_in_metadata(self, mock_get_store, sample_item, sample_result):
         """Analysis metadata should include source (not source_type) for email reporter."""
         mock_store = Mock()
@@ -72,7 +72,7 @@ class TestAnalysisMetadataEnrichment:
         metadata = analysis_call.kwargs["metadatas"][0]
         assert metadata["source"] == "reddit"
 
-    @patch("src.processors.analyzer.get_vector_store")
+    @patch("src.storage.vector_store.get_vector_store")
     def test_analysis_stores_url_in_metadata(self, mock_get_store, sample_item, sample_result):
         """Analysis metadata should include URL for email reporter links."""
         mock_store = Mock()
@@ -88,7 +88,7 @@ class TestAnalysisMetadataEnrichment:
         metadata = analysis_call.kwargs["metadatas"][0]
         assert metadata["url"] == "https://reddit.com/r/ClaudeAI/comments/abc123"
 
-    @patch("src.processors.analyzer.get_vector_store")
+    @patch("src.storage.vector_store.get_vector_store")
     def test_analysis_stores_summary_in_metadata(self, mock_get_store, sample_item, sample_result):
         """Analysis metadata should include full summary (not truncated)."""
         mock_store = Mock()
@@ -104,7 +104,7 @@ class TestAnalysisMetadataEnrichment:
         metadata = analysis_call.kwargs["metadatas"][0]
         assert metadata["summary"] == "Claude 4.6 brings major improvements to coding capabilities."
 
-    @patch("src.processors.analyzer.get_vector_store")
+    @patch("src.storage.vector_store.get_vector_store")
     def test_analysis_stores_signal_score_in_metadata(self, mock_get_store, sample_item, sample_result):
         """Analysis metadata should include signal_score as string."""
         mock_store = Mock()
@@ -120,7 +120,7 @@ class TestAnalysisMetadataEnrichment:
         metadata = analysis_call.kwargs["metadatas"][0]
         assert metadata["signal_score"] == "8"
 
-    @patch("src.processors.analyzer.get_vector_store")
+    @patch("src.storage.vector_store.get_vector_store")
     def test_analysis_without_signal_score(self, mock_get_store, sample_item, sample_result):
         """Analysis metadata should work when signal_score is None."""
         mock_store = Mock()

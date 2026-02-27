@@ -230,16 +230,24 @@ class Analyzer:
             # 2. Store ANALYSIS
             analysis_text = f"{result.summary}\n" + "\n".join(result.key_insights)
 
+            # Build analysis metadata with all fields needed for email reporter
+            analysis_metadata = {
+                "item_id": item.id,
+                "title": item.title,
+                "source": item.source_type.value,
+                "url": item.source_url,
+                "summary": result.summary,
+                "actionability": result.actionability,
+                "confidence": result.confidence,
+            }
+            if item.signal_score is not None:
+                analysis_metadata["signal_score"] = str(item.signal_score)
+
             self.vector_store.add(
                 collection="analysis",
                 documents=[analysis_text],
                 ids=[f"analysis_{item.id}"],
-                metadatas=[{
-                    "item_id": item.id,
-                    "source_type": item.source_type.value,
-                    "actionability": result.actionability,
-                    "confidence": result.confidence,
-                }],
+                metadatas=[analysis_metadata],
             )
 
             log.debug(

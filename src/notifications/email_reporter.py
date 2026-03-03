@@ -403,6 +403,53 @@ Responde SOLO con la traducción en español, sin explicaciones adicionales."""
         log.info("preview_generated", path=str(file_path))
         return file_path
 
+    def send_error_report(
+        self,
+        date: str,
+        collectors_failed: list[str],
+        analysis_errors: int,
+        items_analyzed: int = 0,
+        items_collected: int = 0,
+        duration_seconds: int = 0,
+        critical_error: str | None = None,
+        recipients: list[str] | None = None,
+    ) -> bool:
+        """
+        Send an error report email when the daily cycle has failures.
+
+        Does not require ChromaDB — uses only the provided metrics.
+
+        Args:
+            date: Cycle date (YYYY-MM-DD)
+            collectors_failed: Names of collectors that failed
+            analysis_errors: Number of items that failed analysis
+            items_analyzed: Total items successfully analyzed
+            items_collected: Total items collected
+            duration_seconds: Cycle duration in seconds
+            critical_error: Critical error message if the cycle was aborted
+            recipients: Override recipients (optional)
+
+        Returns:
+            True if sent successfully
+        """
+        try:
+            template = self.env.get_template("error_report.html")
+            html = template.render(
+                date=date,
+                critical_error=critical_error,
+                collectors_failed=collectors_failed,
+                analysis_errors=analysis_errors,
+                items_analyzed=items_analyzed,
+                items_collected=items_collected,
+                duration_seconds=duration_seconds,
+            )
+        except Exception as e:
+            log.error("error_report_render_failed", error=str(e)[:200])
+            return False
+
+        subject = f"AI Architect - Errores en ciclo diario {date}"
+        return self.send_email(html, recipients=recipients, subject=subject)
+
     def send_daily_report(
         self,
         days: int = 1,

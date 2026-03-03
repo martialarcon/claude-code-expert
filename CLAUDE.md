@@ -115,3 +115,62 @@ Busca información en la base de datos vectorial sobre el ecosistema Claude Code
 **Colecciones disponibles:**
 - `items`: Señales recopiladas (blogs, repos, noticias)
 - `analysis`: Análisis profundos de items destacados
+
+## AI Architect v2 - Troubleshooting
+
+### Cron Jobs
+
+Los scripts de automatización (`run-daily.sh`, `run-weekly.sh`, `run-monthly.sh`) incluyen protecciones contra:
+
+1. **Ejecuciones paralelas** - Usan `flock` lockfile para prevenir que múltiples instancias (ej: usuario + root) se ejecuten simultáneamente
+2. **Reconstrucciones accidentales** - Usan `docker compose up -d --no-build` para evitar reconstruir la imagen mientras el pipeline está corriendo
+3. **Reinicios innecesarios** - Verifican si el contenedor ya está saludable antes de intentar iniciarlo
+
+**Diagnosticar problemas de cron:**
+```bash
+# Ver logs de cron del sistema
+journalctl -u cron --since "today" | grep -i "ai-architect\|run-daily"
+
+# Ver logs del pipeline
+cat /home/jetson/developer/projects/claude-code-expert/logs/daily-$(date +%Y-%m-%d).log
+
+# Verificar crontabs activos
+crontab -l                    # Usuario actual
+sudo crontab -l               # Root (puede tener entradas duplicadas)
+```
+
+**Problema conocido:** Si el crontab de root tiene entradas duplicadas, se ejecutarán dos instancias en paralelo. El lockfile previene el daño, pero se recomienda limpiar el crontab de root:
+```bash
+sudo crontab -e
+# Eliminar líneas de ai-architect si existen
+```
+
+### Contenedor Docker
+
+**Verificar estado:**
+```bash
+cd /home/jetson/developer/projects/claude-code-expert
+docker compose ps -a
+docker compose logs --tail 50 app
+```
+
+**Reconstruir imagen (solo cuando sea necesario):**
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
+
+### Pipeline Manual
+
+**Ejecutar ciclo manualmente:**
+```bash
+cd /home/jetson/developer/projects/claude-code-expert
+bash scripts/run-daily.sh      # Daily
+bash scripts/run-weekly.sh     # Weekly
+bash scripts/run-monthly.sh    # Monthly
+```
+
+**O directamente en el contenedor:**
+```bash
+docker compose exec app python main.py --mode daily
+```

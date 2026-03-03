@@ -8,7 +8,7 @@
 #   ./scripts/setup_cron.sh
 #
 # The cron jobs will run:
-#   - Daily:   At midnight (00:00)
+#   - Daily:   At 01:00
 #   - Weekly:  Monday at 01:00
 #   - Monthly: 1st of month at 02:00
 
@@ -46,8 +46,8 @@ EOF
 # Create cron jobs
 echo "Creating cron jobs..."
 
-# Daily at midnight - uses run-daily.sh to ensure container is running
-DAILY_JOB="0 0 * * * $PROJECT_DIR/scripts/run-daily.sh"
+# Daily at 01:00 - uses run-daily.sh to ensure container is running
+DAILY_JOB="0 1 * * * $PROJECT_DIR/scripts/run-daily.sh"
 
 # Weekly on Monday at 01:00 - uses run-weekly.sh to ensure container is running
 WEEKLY_JOB="0 1 * * 1 $PROJECT_DIR/scripts/run-weekly.sh"

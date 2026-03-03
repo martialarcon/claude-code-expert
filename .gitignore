@@ -42,12 +42,6 @@ data/transcripts/*.mp3
 data/packages/*.json
 
 # Output (generated, but keep structure)
-output/daily/*.md
-output/weekly/*.md
-output/monthly/*.md
-output/topics/*.md
-output/competitive/*.md
-output/master.md
 !output/**/.gitkeep
 
 # Logs

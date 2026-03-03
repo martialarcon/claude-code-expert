@@ -199,6 +199,40 @@ class VectorStore:
 
         return embeddings
 
+    def get(
+        self,
+        collection: str,
+        ids: list[str],
+        include: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Retrieve documents by ID (no embedding lookup).
+
+        Args:
+            collection: Collection name
+            ids: List of document IDs to retrieve
+            include: Fields to include (default: metadatas)
+
+        Returns:
+            Dict with ids, metadatas (and any other included fields)
+        """
+        col = self.get_collection(collection)
+        return col.get(ids=ids, include=include or ["metadatas"])
+
+    def exists(self, collection: str, doc_id: str) -> bool:
+        """
+        Check whether a document ID exists in a collection.
+
+        Args:
+            collection: Collection name
+            doc_id: Document ID to check
+
+        Returns:
+            True if the document exists
+        """
+        result = self.get(collection, ids=[doc_id], include=["metadatas"])
+        return bool(result.get("ids"))
+
     def delete(
         self,
         collection: str,

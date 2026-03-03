@@ -6,6 +6,7 @@ Performs deep analysis of individual items using Claude Sonnet.
 
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from .client_factory import get_analysis_client
@@ -103,6 +104,10 @@ class Analyzer:
             self._vector_store = get_vector_store()
         return self._vector_store
 
+    def _already_analyzed(self, item_id: str) -> bool:
+        """Return True if this item already has an analysis stored in ChromaDB."""
+        return self.vector_store.exists("analysis", f"analysis_{item_id}")
+
     def analyze(self, item: CollectedItem) -> AnalysisResult | None:
         """
         Analyze a single item.
@@ -111,8 +116,12 @@ class Analyzer:
             item: Item to analyze
 
         Returns:
-            AnalysisResult or None if analysis fails
+            AnalysisResult or None if analysis fails or item already analyzed
         """
+        if self._already_analyzed(item.id):
+            log.info("item_already_analyzed_skipping", item_id=item.id, title=item.title[:60])
+            return None
+
         prompt = ANALYSIS_PROMPT.format(
             title=item.title,
             source_type=item.source_type.value,
@@ -239,6 +248,7 @@ class Analyzer:
                 "summary": result.summary,
                 "actionability": result.actionability,
                 "confidence": result.confidence,
+                "analyzed_at": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
             }
             if item.signal_score is not None:
                 analysis_metadata["signal_score"] = str(item.signal_score)

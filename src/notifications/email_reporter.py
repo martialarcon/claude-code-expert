@@ -99,62 +99,83 @@ class EmailReporter:
 
     def fetch_content(self, days: int = 1) -> EmailContent | None:
         """
-        Fetch synthesis and analysis from ChromaDB.
+        Fetch synthesis and analysis from ChromaDB, filtered strictly by date.
+
+        Items are filtered using metadata fields (`period` for synthesis,
+        `analyzed_at` for analysis) so only content from the target date
+        is included — never content from previous days.
 
         Args:
-            days: Number of days to look back (default: 1 for today)
+            days: How many days to look back (default: 1 = yesterday's cycle,
+                  which is what ran at midnight)
 
         Returns:
-            EmailContent or None if no data found
+            EmailContent or None if no data found for that date
         """
         log.info("fetching_content", days=days)
 
-        # Calculate date range
         target_date = datetime.now() - timedelta(days=days)
         date_str = target_date.strftime("%Y-%m-%d")
 
         try:
-            # Fetch synthesis
+            # --- Synthesis: filter by period metadata (exact date match) ---
             synthesis_results = self.vector_store.search(
                 query=f"daily synthesis {date_str}",
                 collection="synthesis",
                 n_results=1,
+                where={"period": date_str},
             )
 
             if not synthesis_results.get("documents", [[]])[0]:
-                log.warning("no_synthesis_found", date=date_str)
+                log.warning("no_synthesis_found_for_date", date=date_str)
                 return None
 
             synthesis_doc = synthesis_results["documents"][0][0]
             synthesis_meta = synthesis_results["metadatas"][0][0]
 
-            # Fetch analysis items
+            # --- Analysis items: filter by analyzed_at metadata (exact date) ---
             analysis_results = self.vector_store.search(
-                query=f"analysis {date_str}",
+                query="analyzed items signal insights",
                 collection="analysis",
-                n_results=10,
+                n_results=20,
+                where={"analyzed_at": date_str},
             )
 
-            # Parse items
-            items: list[AnalyzedItem] = []
             docs = analysis_results.get("documents", [[]])[0]
             metas = analysis_results.get("metadatas", [[]])[0]
 
+            if not docs:
+                log.warning("no_analysis_items_for_date", date=date_str)
+
+            # Parse and sort by signal_score descending (best items first)
+            items: list[AnalyzedItem] = []
             for i, doc in enumerate(docs):
                 meta = metas[i] if i < len(metas) else {}
                 items.append(self._parse_analysis_item(doc, meta))
 
-            # Build content
+            items.sort(key=lambda x: x.signal_score, reverse=True)
+
+            # Keep top 10 for the email
+            items = items[:10]
+
             content = EmailContent(
                 date=date_str,
                 relevance_score=synthesis_meta.get("relevance_score", 5),
                 summary=synthesis_meta.get("summary", synthesis_doc[:500]),
-                highlights=synthesis_meta.get("highlights", []).split("\n") if isinstance(synthesis_meta.get("highlights"), str) else synthesis_meta.get("highlights", []),
-                patterns=synthesis_meta.get("patterns", []).split("\n") if isinstance(synthesis_meta.get("patterns"), str) else synthesis_meta.get("patterns", []),
+                highlights=(
+                    synthesis_meta.get("highlights", "").split("\n")
+                    if isinstance(synthesis_meta.get("highlights"), str)
+                    else synthesis_meta.get("highlights", [])
+                ),
+                patterns=(
+                    synthesis_meta.get("patterns", "").split("\n")
+                    if isinstance(synthesis_meta.get("patterns"), str)
+                    else synthesis_meta.get("patterns", [])
+                ),
                 items=items,
             )
 
-            log.info("content_fetched", items_count=len(items))
+            log.info("content_fetched", date=date_str, items_count=len(items))
             return content
 
         except Exception as e:

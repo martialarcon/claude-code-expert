@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Architect - Reporte de Errores</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0f0f1a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #2e1a1a 0%, #3e1616 100%); border-radius: 12px; padding: 24px; margin-bottom: 20px; border-left: 4px solid #ff4444;">
+            <h1 style="color: #ffffff; margin: 0 0 8px 0; font-size: 24px;">
+                ⚠️ AI Architect - Reporte de Errores
+            </h1>
+            <p style="color: #a0a0a0; margin: 0; font-size: 14px;">
+                {{ date }} | Errores detectados en el ciclo diario
+            </p>
+        </div>
+
+        <!-- Error crítico del ciclo -->
+        {% if critical_error %}
+        <div style="background: #2e1a1a; border-radius: 12px; padding: 24px; margin-bottom: 20px; border: 1px solid #ff4444;">
+            <h2 style="color: #ff4444; margin: 0 0 16px 0; font-size: 18px;">
+                🔴 Error Crítico - Ciclo Interrumpido
+            </h2>
+            <pre style="color: #ffaaaa; margin: 0; font-size: 13px; white-space: pre-wrap; word-break: break-word; background: #1a0f0f; padding: 12px; border-radius: 6px; line-height: 1.5;">{{ critical_error }}</pre>
+        </div>
+        {% endif %}
+
+        <!-- Colectores fallidos -->
+        {% if collectors_failed %}
+        <div style="background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+            <h2 style="color: #ff9944; margin: 0 0 16px 0; font-size: 18px;">
+                📡 Colectores Fallidos ({{ collectors_failed | length }})
+            </h2>
+            <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                {% for collector in collectors_failed %}
+                <li style="color: #ffcc88; font-size: 14px; margin-bottom: 6px;">
+                    <span style="background: #3a2a1a; padding: 2px 8px; border-radius: 4px; font-family: monospace;">{{ collector }}</span>
+                    <span style="color: #808080; font-size: 12px; margin-left: 8px;">— no se pudieron recolectar datos</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Errores de análisis -->
+        {% if analysis_errors > 0 %}
+        <div style="background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+            <h2 style="color: #ffd700; margin: 0 0 16px 0; font-size: 18px;">
+                🔬 Errores de Análisis
+            </h2>
+            <p style="color: #e0e0e0; margin: 0; font-size: 15px;">
+                <span style="font-size: 28px; font-weight: bold; color: #ffd700;">{{ analysis_errors }}</span>
+                <span style="color: #a0a0a0; margin-left: 8px;">ítems no pudieron ser analizados por Claude</span>
+            </p>
+            <p style="color: #808080; margin: 12px 0 0 0; font-size: 13px;">
+                Posibles causas: límite de tokens, error de API, respuesta malformada.
+                Los ítems fallidos fueron procesados con análisis de respaldo.
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- Resumen del ciclo -->
+        <div style="background: #1a1a2e; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+            <h2 style="color: #4a9eff; margin: 0 0 16px 0; font-size: 18px;">
+                📊 Resumen del Ciclo
+            </h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="color: #a0a0a0; font-size: 14px; padding: 6px 0;">Ítems recolectados</td>
+                    <td style="color: #e0e0e0; font-size: 14px; text-align: right; font-weight: bold;">{{ items_collected }}</td>
+                </tr>
+                <tr>
+                    <td style="color: #a0a0a0; font-size: 14px; padding: 6px 0; border-top: 1px solid #252540;">Ítems analizados</td>
+                    <td style="color: #e0e0e0; font-size: 14px; text-align: right; font-weight: bold; border-top: 1px solid #252540;">{{ items_analyzed }}</td>
+                </tr>
+                <tr>
+                    <td style="color: #a0a0a0; font-size: 14px; padding: 6px 0; border-top: 1px solid #252540;">Errores de análisis</td>
+                    <td style="color: {% if analysis_errors > 0 %}#ffd700{% else %}#00d4aa{% endif %}; font-size: 14px; text-align: right; font-weight: bold; border-top: 1px solid #252540;">{{ analysis_errors }}</td>
+                </tr>
+                <tr>
+                    <td style="color: #a0a0a0; font-size: 14px; padding: 6px 0; border-top: 1px solid #252540;">Colectores fallidos</td>
+                    <td style="color: {% if collectors_failed %}#ff9944{% else %}#00d4aa{% endif %}; font-size: 14px; text-align: right; font-weight: bold; border-top: 1px solid #252540;">{{ collectors_failed | length }}</td>
+                </tr>
+                <tr>
+                    <td style="color: #a0a0a0; font-size: 14px; padding: 6px 0; border-top: 1px solid #252540;">Duración del ciclo</td>
+                    <td style="color: #e0e0e0; font-size: 14px; text-align: right; border-top: 1px solid #252540;">{{ duration_seconds }}s</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 20px 0;">
+            <p style="color: #606060; margin: 0; font-size: 12px;">
+                🤖 AI Architect v2 | Jetson Orin Nano | Revisar logs para más detalles
+            </p>
+        </div>
+
+    </div>
+</body>
+</html>

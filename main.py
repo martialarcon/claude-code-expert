@@ -146,6 +146,9 @@ class AIArchitect:
             # Phase 7: Email Report (if enabled)
             self._send_email_report()
 
+            # Phase 8: Error Report (if partial errors occurred)
+            self._send_error_email()
+
             log.info(
                 "cycle_complete",
                 mode=self.mode,
@@ -157,6 +160,7 @@ class AIArchitect:
         except Exception as e:
             log.error("cycle_failed", error=str(e)[:500])
             self._notify_failed(str(e))
+            self._send_error_email(critical_error=str(e)[:1000])
             return False
 
     def _collect(self) -> list[CollectedItem]:
@@ -343,6 +347,40 @@ class AIArchitect:
                 month=synthesis.month,
                 relevance_score=synthesis.relevance_score,
             )
+
+    def _send_error_email(self, critical_error: str | None = None, recipients: list[str] | None = None) -> None:
+        """Send error report email if email is enabled and there are errors to report."""
+        email_config = self.config.notifications.email
+        if not email_config.enabled:
+            return
+
+        has_errors = (
+            bool(self.metrics.collectors_failed)
+            or self.metrics.analysis_errors > 0
+            or critical_error is not None
+        )
+        if not has_errors:
+            return
+
+        try:
+            reporter = EmailReporter()
+            date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            success = reporter.send_error_report(
+                date=date,
+                collectors_failed=self.metrics.collectors_failed,
+                analysis_errors=self.metrics.analysis_errors,
+                items_analyzed=self.metrics.items_analyzed,
+                items_collected=self.metrics.items_collected,
+                duration_seconds=int(self.metrics.total_duration),
+                critical_error=critical_error,
+                recipients=recipients,
+            )
+            if success:
+                log.info("error_email_sent")
+            else:
+                log.warning("error_email_failed")
+        except Exception as e:
+            log.error("error_email_error", error=str(e)[:200])
 
     def _send_email_report(self, preview_only: bool = False, recipients: list[str] | None = None) -> None:
         """Send email report if enabled."""
